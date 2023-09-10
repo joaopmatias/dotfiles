@@ -1,11 +1,15 @@
 
+function prompt_show_arch() {
+  p10k segment -f 'yellow' -b 'black' -t ${CPU_ARCHITECTURE}
+}
+
 typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=( \
-	time                   dir                      vcs
-	newline                prompt_char)
+	time                   command_execution_time   dir
+	vcs                    newline                  prompt_char)
 typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(  \
-	status                  command_execution_time  background_jobs
-	virtualenv              anaconda                pyenv
-	goenv                   scalaenv                context)
+	status                  background_jobs         virtualenv              
+	anaconda                pyenv                   goenv                   
+	scalaenv                show_arch)
 typeset -g POWERLEVEL9K_MODE=nerdfont-complete
 typeset -g POWERLEVEL9K_ICON_PADDING=none
 typeset -g POWERLEVEL9K_TIME_FOREGROUND=3
@@ -75,7 +79,6 @@ typeset -g POWERLEVEL9K_STATUS_OK=false
 typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND=0
 typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_BACKGROUND=3
 typeset -g POWERLEVEL9K_ANACONDA_CONTENT_EXPANSION='${${${${CONDA_PROMPT_MODIFIER#\(}% }%\)}:-${CONDA_PREFIX:t}}'
-typeset -g POWERLEVEL9K_CONTEXT_BACKGROUND=0
 typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_GAP_CHAR=
 typeset -g POWERLEVEL9K_PROMPT_CHAR_BACKGROUND=
 typeset -g POWERLEVEL9K_PROMPT_CHAR_LEFT_{LEFT,RIGHT}_WHITESPACE=

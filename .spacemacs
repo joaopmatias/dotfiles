@@ -32,7 +32,8 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(
+   '(python
+     javascript
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
@@ -46,15 +47,25 @@ This function should only modify configuration layer settings."
      ;; lsp
      ;; markdown
      multiple-cursors
-     org
+     themes-megapack
+     neotree
+     latex
      ;; (shell :variables
      ;;        shell-default-height 30
      ;;        shell-default-position 'bottom)
      ;; spell-checking
      ;; syntax-checking
      ;; version-control
-     themes-megapack
-     neotree
+     (org :variables
+          org-enable-reveal-js-support t
+          org-enable-roam-support t
+          org-enable-roam-ui t)
+     org
+     unicode-fonts
+     (plantuml :variables 
+               plantuml-jar-path "~/Downloads/plantuml-1.2023.8.jar" 
+               org-plantuml-jar-path "~/Downloads/plantuml-1.2023.8.jar")
+     mermaid
      )
 
 
@@ -67,7 +78,10 @@ This function should only modify configuration layer settings."
    ;; `dotspacemacs/user-config'. To use a local version of a package, use the
    ;; `:location' property: '(your-package :location "~/path/to/your-package/")
    ;; Also include the dependencies as they will not be resolved automatically.
-   dotspacemacs-additional-packages '()
+   dotspacemacs-additional-packages
+   '(org-alert
+     org-reverse-datetree
+     )
 
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
@@ -244,7 +258,7 @@ It should only modify the values of Spacemacs settings."
    ;; Default font or prioritized list of fonts. The `:size' can be specified as
    ;; a non-negative integer (pixel size), or a floating-point (point size).
    ;; Point size is recommended, because it's device independent. (default 10.0)
-   dotspacemacs-default-font '("Source Code Pro"
+   dotspacemacs-default-font '("Monaco"
                                :size 13
                                :weight normal
                                :width normal
@@ -384,14 +398,14 @@ It should only modify the values of Spacemacs settings."
 
    ;; Show the scroll bar while scrolling. The auto hide time can be configured
    ;; by setting this variable to a number. (default t)
-   dotspacemacs-scroll-bar-while-scrolling t
+   dotspacemacs-scroll-bar-while-scrolling nil
 
    ;; Control line numbers activation.
    ;; If set to `t', `relative' or `visual' then line numbers are enabled in all
    ;; `prog-mode' and `text-mode' derivatives. If set to `relative', line
    ;; numbers are relative. If set to `visual', line numbers are also relative,
-   ;; but lines are only visual lines are counted. For example, folded lines
-   ;; will not be counted and wrapped lines are counted as multiple lines.
+   ;; but only visual lines are counted. For example, folded lines will not be
+   ;; counted and wrapped lines are counted as multiple lines.
    ;; This variable can also be set to a property list for finer control:
    ;; '(:relative nil
    ;;   :visual nil
@@ -405,10 +419,10 @@ It should only modify the values of Spacemacs settings."
    ;; When used in a plist, `visual' takes precedence over `relative'.
    ;; (default nil)
    dotspacemacs-line-numbers '(:relative nil
-                                         :disabled-for-modes dired-mode
-                                                             doc-view-mode
-                                                             pdf-view-mode
-                                            :size-limit-kb 1000)
+                               :visual nil
+                               :disabled-for-modes dired-mode
+                                                   doc-view-mode
+                                                   pdf-view-mode)
 
    ;; Code folding method. Possible values are `evil', `origami' and `vimish'.
    ;; (default 'evil)
@@ -489,12 +503,15 @@ It should only modify the values of Spacemacs settings."
    ;; (default nil)
    dotspacemacs-whitespace-cleanup nil
 
-   ;; If non nil activate `clean-aindent-mode' which tries to correct
-   ;; virtual indentation of simple modes. This can interfer with mode specific
+   ;; If non-nil activate `clean-aindent-mode' which tries to correct
+   ;; virtual indentation of simple modes. This can interfere with mode specific
    ;; indent handling like has been reported for `go-mode'.
    ;; If it does deactivate it here.
    ;; (default t)
    dotspacemacs-use-clean-aindent-mode t
+
+   ;; Accept SPC as y for prompts if non-nil. (default nil)
+   dotspacemacs-use-SPC-as-y nil
 
    ;; If non-nil shift your number row to match the entered keyboard layout
    ;; (only in insert state). Currently supported keyboard layouts are:
@@ -513,7 +530,7 @@ It should only modify the values of Spacemacs settings."
    dotspacemacs-pretty-docs nil
 
    ;; If nil the home buffer shows the full path of agenda items
-   ;; and todos. If non nil only the file name is shown.
+   ;; and todos. If non-nil only the file name is shown.
    dotspacemacs-home-shorten-agenda-source nil
 
    ;; If non-nil then byte-compile some of Spacemacs files.
@@ -523,6 +540,14 @@ It should only modify the values of Spacemacs settings."
    mac-right-option-modifier nil
    ;; Soft wrap org-mode documents
    org-startup-truncated nil
+
+   ;; org-roam folder
+   org-roam-directory "~/Documents/org"
+   org-roam-v2-ack t
+   deft-directory "~/Documents/org"
+
+   ;; org-mode src block indentation
+   org-src-preserve-indentation t
    ))
 
 (defun dotspacemacs/user-env ()
@@ -531,7 +556,8 @@ This function defines the environment variables for your Emacs session. By
 default it calls `spacemacs/load-spacemacs-env' which loads the environment
 variables declared in `~/.spacemacs.env' or `~/.spacemacs.d/.spacemacs.env'.
 See the header of this file for more information."
-  (spacemacs/load-spacemacs-env))
+  (spacemacs/load-spacemacs-env)
+  )
 
 (defun dotspacemacs/user-init ()
   "Initialization for user code:
@@ -555,6 +581,115 @@ configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
   (spacemacs/toggle-vi-tilde-fringe-off)
+  (global-visual-line-mode t)
+  (spacemacs/toggle-visual-line-navigation)
+  (setq org-agenda-log-mode-items '(closed clock state))
+  (setq org-agenda-start-with-log-mode t)
+
+  ;; make latex math symbols latex
+  (with-eval-after-load 'org
+    (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0)))
+
+  ;; use native notifications in osx
+  (setq alert-default-style 'osx-notifier)
+
+  ;; start breaks with manual input 
+  (setq org-pomodoro-manual-break t)
+
+  ;; fix pomodoro manual break error
+  (with-eval-after-load 'org-pomodoro
+      (defun org-pomodoro-overtime ()
+        "Is invoked when the time for a pomodoro runs out.
+      Notify the user that the pomodoro should be finished by calling `org-pomodoro'"
+        (org-pomodoro-maybe-play-sound :overtime)
+        (org-pomodoro-notify "Pomodoro completed. Now on overtime!" "Start break by calling `org-pomodoro'")
+        (org-pomodoro-start :overtime)
+        (org-pomodoro-update-mode-line)
+        (run-hooks 'org-pomodoro-overtime-hook)))
+
+  ;; edit spaceline to make pomodoro timer always visible
+  (spaceline-compile
+      '(((persp-name
+          workspace-number
+          window-number)
+         :fallback evil-state
+         :face highlight-face
+         :priority 100)
+        (anzu :priority 95)
+        auto-compile
+        ((buffer-modified buffer-size buffer-id remote-host)
+         :priority 98)
+        (major-mode :priority 79)
+        (process :when active)
+        ((flycheck-error flycheck-warning flycheck-info)
+         :when active
+         :priority 89)
+        (minor-modes :when active
+                     :priority 9)
+        (mu4e-alert-segment :when active)
+        (erc-track :when active)
+        (version-control :when active
+                         :priority 78)
+        (org-pomodoro :priority 93)
+        (org-clock :when active)
+        nyan-cat)
+      '(which-function
+        (python-pyvenv :fallback python-pyenv)
+        (purpose :priority 94)
+        (battery :when active)
+        (selection-info :priority 95)
+        input-method
+        ((buffer-encoding-abbrev
+          point-position
+          line-column)
+         :separator " | "
+         :priority 96)
+        (global :when active)
+        ; add here whatever your 'additional-segments were if you had any
+        (buffer-position :priority 99)
+        (hud :priority 99)))
+
+  ;; set org-capture template
+
+  (setq org-capture-templates
+      '(("j" "Journal" entry (file+datetree "~/Documents/org/journal.org")
+         "* %?\nEntered on %U\n  %i\n  %a")
+        ("d" "Daily" entry (file+olp+datetree "~/Documents/org/journal.org")
+         "* %U\n     %?"
+         :tree-type week)
+        ("l" "Time log" entry 
+         (file+function "~/Documents/org/timetrack.org"
+          (lambda()
+           (setq org-reverse-datetree-non-reverse t)
+           (setq org-reverse-datetree-level-formats '("%Y" "%Y-W%W"))
+           (org-reverse-datetree-goto-date-in-file)))
+         "* %U  %?  :TIME:")
+        ("t" "Task" entry 
+         (file+function "~/Documents/org/timetrack.org"
+          (lambda()
+           (setq org-reverse-datetree-non-reverse t)
+           (setq org-reverse-datetree-level-formats '("%Y" "%Y-W%W"))
+           (org-reverse-datetree-goto-date-in-file)))
+         "* TODO  %?\n** [/] tasks\n- [ ] write plan")
+        ("c" "Code Snippet" entry 
+         (file+function "~/Documents/org/snippets.org"
+          (lambda()
+           (setq org-reverse-datetree-non-reverse t)
+           (setq org-reverse-datetree-level-formats '("%Y" "%Y-W%W"))
+           (org-reverse-datetree-goto-date-in-file)))
+         "*  \n%U\n#+begin_src python\n\n%?\n\n#+end_src")
+        ("m" "Meeting note" entry (file+olp+datetree "~/Documents/org/meetings.org")
+         "* %U\n %?"
+         :tree-type week)))
+
+  ;; set python org-babel
+  (setq org-babel-python-command "~/miniconda3/bin/python")
+
+  ;; start org-alert
+  (require 'org-alert)
+
+  ;; specify mmdc executable path for mermaid diagrams
+  (setq ob-mermaid-cli-path "/opt/homebrew/bin/mmdc")
   )
 
 
@@ -588,14 +723,46 @@ This function is called at the very end of Spacemacs initialization."
      ("XXX+" . "#dc752f")
      ("\\?\\?\\?+" . "#dc752f")))
  '(org-agenda-files
-   '("~/Documents/planning/daily.org" "~/Documents/planning/goals.org"))
+   '("~/Documents/org/timetrack.org" "~/Documents/org/study.org" "~/Documents/org/goals.org" "~/Documents/planning/daily.org"))
+ '(org-modules
+   '(ol-bbdb ol-bibtex ol-docview ol-doi ol-eww ol-gnus org-habit ol-info ol-irc ol-mhe org-protocol ol-rmail ol-w3m))
+ '(org-pomodoro-finished-sound "~/Downloads/menu-selection-click.wav")
+ '(org-pomodoro-finished-sound-p t)
+ '(org-pomodoro-format "%s")
+ '(org-pomodoro-killed-sound "~/Downloads/menu-selection-click.wav")
+ '(org-pomodoro-killed-sound-p t)
+ '(org-pomodoro-long-break-format "rest~%s")
+ '(org-pomodoro-long-break-sound "~/Downloads/menu-selection-click.wav")
+ '(org-pomodoro-overtime-sound "~/Downloads/menu-selection-click.wav")
+ '(org-pomodoro-short-break-format "%s")
+ '(org-pomodoro-short-break-sound "~/Downloads/menu-selection-click.wav")
+ '(org-pomodoro-start-sound "~/Downloads/menu-selection-click.wav")
+ '(org-pomodoro-start-sound-p t)
+ '(org-pomodoro-ticking-sound-states '(:pomodoro :short-break :long-break))
+ '(package-selected-packages
+   '(blacken code-cells company-anaconda anaconda-mode company counsel-gtags counsel swiper ivy cython-mode dap-mode lsp-docker lsp-treemacs bui treemacs cfrs pfuture ggtags helm-cscope helm-gtags helm-pydoc importmagic epc ctable concurrent deferred live-py-mode lsp-pyright lsp-python-ms lsp-mode nose pip-requirements pipenv load-env-vars pippel poetry compat py-isort pydoc pyenv-mode pythonic pylookup pytest pyvenv sphinx-doc stickyfunc-enhance xcscope yapfify skewer-mode simple-httpd json-snatcher yasnippet multiple-cursors js2-mode auctex zenburn-theme zen-and-art-theme ws-butler winum white-sand-theme which-key web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package undo-tree underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spaceline spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smeargle seti-theme reverse-theme restart-emacs rebecca-theme rainbow-delimiters railscasts-theme purple-haze-theme professional-theme popwin planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el paradox orgit organic-green-theme org-projectile org-present org-pomodoro org-mime org-download org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme neotree naquadah-theme mustang-theme move-text monokai-theme monochrome-theme molokai-theme moe-theme minimal-theme material-theme majapahit-theme magit-gitflow madhat2r-theme macrostep lush-theme lorem-ipsum livid-mode linum-relative link-hint light-soap-theme json-mode js2-refactor js-doc jbeans-theme jazz-theme ir-black-theme inkpot-theme indent-guide hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-ag hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gandalf-theme flx-ido flatui-theme flatland-theme fill-column-indicator farmhouse-theme fancy-battery eyebrowse expand-region exotica-theme exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu espresso-theme elisp-slime-nav dumb-jump dracula-theme django-theme diminish define-word darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme column-enforce-mode color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clean-aindent-mode cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme auto-highlight-symbol auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line))
  '(pdf-view-midnight-colors '("#b2b2b2" . "#292b2e")))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(highlight-parentheses-highlight ((nil (:weight ultra-bold))) t)
  '(org-level-1 ((t (:inherit outline-1 :extend nil :weight bold :height 1.3))))
  '(org-level-2 ((t (:inherit outline-2 :extend nil :weight bold :height 1.2))))
  '(org-level-3 ((t (:inherit outline-3 :extend nil :weight bold :height 1.1)))))
 )
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(evil-want-Y-yank-to-eol nil)
+ '(package-selected-packages
+   '(skewer-mode simple-httpd json-snatcher yasnippet multiple-cursors js2-mode auctex zenburn-theme zen-and-art-theme ws-butler winum white-sand-theme which-key web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package undo-tree underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spaceline spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smeargle seti-theme reverse-theme restart-emacs rebecca-theme rainbow-delimiters railscasts-theme purple-haze-theme professional-theme popwin planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el paradox orgit organic-green-theme org-projectile org-present org-pomodoro org-mime org-download org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme neotree naquadah-theme mustang-theme move-text monokai-theme monochrome-theme molokai-theme moe-theme minimal-theme material-theme majapahit-theme magit-gitflow madhat2r-theme macrostep lush-theme lorem-ipsum livid-mode linum-relative link-hint light-soap-theme json-mode js2-refactor js-doc jbeans-theme jazz-theme ir-black-theme inkpot-theme indent-guide hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-ag hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gandalf-theme flx-ido flatui-theme flatland-theme fill-column-indicator farmhouse-theme fancy-battery eyebrowse expand-region exotica-theme exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu espresso-theme elisp-slime-nav dumb-jump dracula-theme django-theme diminish define-word darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme column-enforce-mode color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clean-aindent-mode cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme auto-highlight-symbol auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

@@ -8,7 +8,7 @@ brew-upgrade:
 	brew upgrade --ignore-pinned --formula
 
 brew-cask-upgrade:
-	CASKS_PINNED="dotnet-sdk vlc"; \
+	CASKS_PINNED="dotnet-sdk"; \
 	echo "Some casks will not be upgraded: $${CASKS_PINNED}"; \
 	APPS=`brew outdated -q --cask | cat | tr "\n" " "`; \
 	for app in $${CASKS_PINNED}; \
@@ -16,10 +16,10 @@ brew-cask-upgrade:
 		APPS=`echo " $${APPS} " | sed -e "s/ $${app} / /g" -e "s/^ *\(.*\) *$$/\1/g"`; \
 	done; \
 	if [ ! -z "$${APPS}" ]; then \
-		brew cask upgrade $${APPS}; \
+		brew upgrade --cask $${APPS}; \
 	fi
 
 brew-remove-unused:
 	brew bundle dump; \
-	brew bundle --force cleanup \
+	brew bundle --force cleanup; \
 	rm Brewfile
